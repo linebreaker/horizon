@@ -38,9 +38,12 @@ function Horizon({
     WebSocketCtor,
   })
 
+  // We need to filter out null/undefined handshakes in several places
+  const filteredHandshake = socket.handshake.filter(x => x != null)
+
   // Store whatever token we get back from the server when we get a
   // handshake response
-  socket.handshake.subscribe({
+  filteredHandshake.subscribe({
     next(handshake) {
       if (authType !== 'unauthenticated') {
         tokenStorage.set(handshake.token)
@@ -62,7 +65,11 @@ function Horizon({
   }
 
   horizon.currentUser = () =>
-    new UserDataTerm(horizon, socket.handshake, socket)
+    new UserDataTerm(
+      horizon,
+      filteredHandshake,
+      socket
+    )
 
   horizon.disconnect = () => {
     socket.complete()
@@ -101,6 +108,7 @@ function Horizon({
     sendRequest,
     tokenStorage,
     handshake: socket.handshake,
+    horizonSocket: socket,
   }
   Object.freeze(horizon.utensils)
 

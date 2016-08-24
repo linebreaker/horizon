@@ -61,5 +61,72 @@ export default function horizonObjectSuite() {
       })
       horizon.connect() // no-op error handler, already covered
     })
+
+    // it('clears all state when reconnecting', done => {
+    //   const horizon = Horizon()
+    //   horizon.onReady(e => {
+    //     console.log('fired onready')
+    //     horizon('foo').findAll({ foo: 'req1' }).fetch().subscribe({
+    //       error(e) {
+    //         console.log('first query errored')
+    //         done(e)
+    //       },
+    //       complete() {
+    //         console.log('first query finished')
+    //         horizon._socket.socket.close()
+    //       },
+    //     })
+    //   })
+    //   horizon.onDisconnected(e => {
+    //     console.log('fired disconnection')
+    //     horizon.onReady(e => {
+    //       console.log('Got ready')
+    //       horizon('foo').findAll({ foo: 'req2' }).fetch().subscribe({
+    //         error(e) {
+    //           done(e)
+    //         },
+    //         complete() {
+    //           done()
+    //         },
+    //       })
+    //     })
+    //     horizon.connect(e => done(e))
+    //   })
+    //   horizon.connect(e => done(e))
+    // })
+    it('clears all state when reconnecting', done => {
+      const message = {
+        text: 'What a beautiful horizon!',
+      }
+
+      const horizon = Horizon()
+      const chat = horizon('messages')
+      let handle
+
+      horizon.status(s => {
+        console.log('status', s)
+      })
+
+      horizon.onReady(() => {
+        if (handle) {
+          clearTimeout(handle)
+        }
+      })
+
+      horizon.onDisconnected(() => {
+        handle = setTimeout(() => {
+          console.log('interval fired')
+          chat.watch().subscribe(docs => {
+            console.log('Docs', docs.map(e => e.text))
+            done()
+          })
+        }, 1000)
+      })
+      chat.watch().subscribe(docs => {
+        console.log('DOCUMENTS', docs.length)
+        horizon.disconnect()
+      })
+      chat.store(message)
+    })
   })
 }
